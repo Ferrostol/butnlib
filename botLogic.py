@@ -1,5 +1,4 @@
 from telebot import TeleBot, types, apihelper
-from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 from .buttons import BaseButton, ButtonWork
 
 
@@ -27,13 +26,22 @@ class LogicBot:
             next = None
         btn: BaseButton = BaseButton.get_buttons(self.buttons, chat_id, btn.keys_search)
         try:
-            self.bot.edit_message_text(
-                text,
-                chat_id=call.message.chat.id,
-                message_id=call.message.message_id,
-                reply_markup=self.get_markup(btn, chat_id=chat_id),
-                parse_mode=btn.parse_mode
-            )
+            if btn.parse_mode == "markdown":
+                md_content = types.InputRichMessage(markdown=result.text)
+                self.bot.edit_message_text(
+                    rich_message=md_content,
+                    chat_id=call.message.chat.id,
+                    message_id=call.message.message_id,
+                    reply_markup=self.get_markup(btn=btn, chat_id=chat_id)
+                )
+            else:
+                self.bot.edit_message_text(
+                    text,
+                    chat_id=call.message.chat.id,
+                    message_id=call.message.message_id,
+                    reply_markup=self.get_markup(btn=btn, chat_id=chat_id),
+                    parse_mode=btn.parse_mode
+                )
             if next is not None:
                 self.bot.register_next_step_handler(call.message, self.next_step, next)
         except apihelper.ApiTelegramException as e:
@@ -64,8 +72,8 @@ class LogicBot:
         for el in btn.get_keys(chat_id):
             if not el.visible(chat_id):
                 continue
-            row.append(InlineKeyboardButton(el.caption, callback_data=el.keys_search))
-        markup = InlineKeyboardMarkup(row_width=btn.row_width)
+            row.append(types.InlineKeyboardButton(el.caption, callback_data=el.keys_search))
+        markup = types.InlineKeyboardMarkup(row_width=btn.row_width)
         markup.add(*row)
         return markup
 
