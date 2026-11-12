@@ -16,6 +16,7 @@ class BaseButton(ABC):
             analyze = None,                 # lambda функция для захода в кнопку при нажатии на неё
             visible = None,                 # lambda функция для отображения кнопки пользователю
             row_width: int = 1,
+            get_first_if_one: bool = False, # Сразу переходить внутрь кнопки, если внутри текущей всего одна кнопка
             **kwargs
     ):
         if text is None:
@@ -32,6 +33,7 @@ class BaseButton(ABC):
         self.prev_button: BaseButton = None
         self.keys_search = key
         self.row_width = row_width
+        self.get_first_if_one = get_first_if_one
 
     @abstractmethod
     def get_keys(self, *args):
@@ -41,16 +43,28 @@ class BaseButton(ABC):
     def update_children_button(self):
         pass
 
-    def get_prev_button(self, two_up: bool = False, first=False):
+    def get_prev_button(self, chat_id, two_up: bool = False, first=False):
+        def check_btn(bt):
+            keys = bt.prev_button.get_keys(chat_id)
+            if len(keys) <= (2 if bt.can_back else 1):
+                bt = bt.prev_button
+                return check_btn(bt)
+            return bt
         if first:
             btn = self
             while btn.prev_button is not None:
                 btn = btn.prev_button
             return btn
-        if self.is_back or two_up: #Возвращаем кнопку на два уровня выше от кнопки Назад или если надо подняться на два уровня
-            if self.prev_button.prev_button is not None:
-                return self.prev_button.prev_button
-        return self.prev_button
+
+        btn = self
+        if btn.is_back:
+            btn = btn.prev_button
+        btn = check_btn(btn)
+        if two_up and btn.prev_button is not None:
+            btn = check_btn(btn.prev_button)
+        if btn.prev_button is not None:
+            btn = btn.prev_button
+        return btn
 
     @staticmethod
     def get_buttons(btns: "BaseButton", chat_id: int, search_key: str, *args):
@@ -72,12 +86,12 @@ class BaseButton(ABC):
             btn = btns
 
         if btn.is_back:
-            btn = btn.get_prev_button()
+            btn = btn.get_prev_button(chat_id=chat_id)
         return btn
 
     @staticmethod
     def get_refresh_button(btn: "BaseButton", chat_id: int, *args):
-        first = btn.get_prev_button(first=True)
+        first = btn.get_prev_button(chat_id=chat_id, first=True)
         btn = BaseButton.get_buttons(first, chat_id, btn.keys_search, *args)
         return btn
 

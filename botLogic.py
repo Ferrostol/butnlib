@@ -11,19 +11,27 @@ class LogicBot:
         chat_id = call.message.chat.id
         self.bot.clear_step_handler(call.message)
         btn: BaseButton = BaseButton.get_buttons(self.buttons, chat_id, call.data)
-        result: Result = btn.analyze(btn, chat_id)
-        if result is not None:
-            btn = result.btn
-            text = result.text
-            next = result.next_step
-        elif isinstance(btn, ButtonWork):
-            result: Result = btn.work_def(btn, chat_id, self.bot)
-            btn: BaseButton = result.btn
-            text = result.text
-            next = result.next_step
-        else:
-            text = btn.text
-            next = None
+        while True:
+            result: Result = btn.analyze(btn, chat_id)
+            if result is not None:
+                btn = result.btn
+                text = result.text
+                next = result.next_step
+            elif isinstance(btn, ButtonWork):
+                result: Result = btn.work_def(btn, chat_id, self.bot)
+                btn: BaseButton = result.btn
+                text = result.text
+                next = result.next_step
+            else:
+                text = btn.text
+                next = None
+            if btn.get_first_if_one:
+                keys = [el for el in btn.get_keys(chat_id) if el.visible(chat_id)]
+                if len(keys) <= (2 if btn.can_back else 1):
+                    if not keys[0].is_back:
+                        btn = keys[0]
+                        continue
+            break
         btn: BaseButton = BaseButton.get_buttons(self.buttons, chat_id, btn.keys_search)
         try:
             if btn.parse_mode == "markdown":
