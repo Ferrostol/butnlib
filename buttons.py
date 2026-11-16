@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 import copy
 
 
@@ -10,9 +11,9 @@ class BaseButton(ABC):
             self,
             key: str,                       # Ключ, по которому можно идентифицировать кнопку
             caption: str,                   # Отображаемое пользователю название кнопки
-            text: str = None,               # Отображаемый пользователю текст вместе с кнопками
-            can_back: bool = None,          # Необходимость добавления кнопки "Назад", в список кнопок
-            parse_mode: str = None,         # Действие кнопки выводит определенный тип содержимого
+            text: str | None = None,               # Отображаемый пользователю текст вместе с кнопками
+            can_back: bool | None = None,          # Необходимость добавления кнопки "Назад", в список кнопок
+            parse_mode: str | None = None,         # Действие кнопки выводит определенный тип содержимого
             analyze = None,                 # lambda функция для захода в кнопку при нажатии на неё
             visible = None,                 # lambda функция для отображения кнопки пользователю
             row_width: int = 1,
@@ -30,7 +31,7 @@ class BaseButton(ABC):
         self.can_back = can_back
         self.analyze = analyze if analyze is not None else lambda *args: None
         self.visible = visible if visible is not None else lambda *args: True
-        self.prev_button: BaseButton = None
+        self.prev_button: BaseButton | None = None
         self.keys_search = key
         self.row_width = row_width
         self.get_first_if_one = get_first_if_one
@@ -132,7 +133,7 @@ class ButtonCustoms(BaseButton):
         self.def_for_buttons = def_for_buttons
 
     def get_keys(self, *args):
-        btns: [BaseButton] = self.def_for_buttons(self, *args)
+        btns: list[BaseButton] = self.def_for_buttons(self, *args)
         if self.can_back:
             btns.append(copy.copy(BackButton))
         for btn in btns:
@@ -149,7 +150,7 @@ class ButtonCustoms(BaseButton):
 class ButtonFixed(BaseButton):
     def __init__(
             self,
-            buttons: [BaseButton] = None,
+            buttons: Sequence[BaseButton] | None = None,
             **kwargs
     ):
         super().__init__(**kwargs)
